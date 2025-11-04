@@ -1,6 +1,13 @@
+'use client'
+
 import Link from "next/link"
+import { signIn } from "next-auth/react"
 
 export default function SignIn() {
+  const handleGoogleSignIn = async () => {
+    await signIn('google', { callbackUrl: '/dashboard' })
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="max-w-md w-full mx-4">
@@ -12,12 +19,18 @@ export default function SignIn() {
         </div>
 
         <div className="space-y-4">
-          <button className="w-full px-6 py-3 border border-border rounded-md hover:bg-accent transition-colors font-medium">
+          <button
+            onClick={handleGoogleSignIn}
+            className="w-full px-6 py-3 border border-border rounded-md hover:bg-accent transition-colors font-medium"
+          >
             Continue with Google
           </button>
 
-          <button className="w-full px-6 py-3 border border-border rounded-md hover:bg-accent transition-colors font-medium">
-            Continue with Email
+          <button
+            disabled
+            className="w-full px-6 py-3 border border-border rounded-md bg-muted text-muted-foreground cursor-not-allowed font-medium"
+          >
+            Continue with Email (Coming Soon)
           </button>
         </div>
 
