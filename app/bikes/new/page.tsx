@@ -3,6 +3,7 @@ import { redirect } from "next/navigation"
 import { listFrames, createBike } from "@/lib/db"
 import { revalidatePath } from "next/cache"
 import Link from "next/link"
+import { SubmitButton } from "./SubmitButton"
 
 export default async function NewBikePage() {
   const session = await auth()
@@ -172,20 +173,7 @@ export default async function NewBikePage() {
             </div>
 
             {/* Submit Button */}
-            <div className="flex gap-4 pt-6">
-              <button
-                type="submit"
-                className="flex-1 px-6 py-3 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors font-medium"
-              >
-                Save Bike
-              </button>
-              <Link
-                href="/dashboard"
-                className="px-6 py-3 border border-border rounded-md hover:bg-accent transition-colors font-medium"
-              >
-                Cancel
-              </Link>
-            </div>
+            <SubmitButton />
           </form>
         </div>
       </main>
