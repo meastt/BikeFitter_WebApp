@@ -16,4 +16,20 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     signIn: '/auth/signin',
   },
   secret: process.env.NEXTAUTH_SECRET,
+  callbacks: {
+    async jwt({ token, account, profile }) {
+      // On first sign in, add the user's ID to the token
+      if (account && profile) {
+        token.id = profile.sub // Google's user ID (sub claim)
+      }
+      return token
+    },
+    async session({ session, token }) {
+      // Add the user ID from the token to the session
+      if (session.user && token.id) {
+        session.user.id = token.id as string
+      }
+      return session
+    },
+  },
 })
