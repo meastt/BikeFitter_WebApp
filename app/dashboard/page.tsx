@@ -11,11 +11,17 @@ export default async function Dashboard() {
     redirect('/auth/signin')
   }
 
+  // Check if user ID exists in session
+  if (!session.user.id) {
+    console.error('Session missing user ID:', session.user)
+    throw new Error('User ID not found in session. Please sign out and sign in again.')
+  }
+
   // Ensure user profile exists (create on first login)
-  await upsertUserProfile(session.user.id!, session.user.email)
+  await upsertUserProfile(session.user.id, session.user.email)
 
   // Fetch user's bikes
-  const bikes = await getBikes(session.user.id!)
+  const bikes = await getBikes(session.user.id)
 
   return (
     <div className="min-h-screen">
