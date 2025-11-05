@@ -20,25 +20,47 @@ export default async function NewBikePage() {
 
     const session = await auth()
     if (!session?.user?.id) {
-      throw new Error('Unauthorized')
+      redirect('/auth/signin')
     }
 
-    const name = formData.get('name') as string
-    const frameId = formData.get('frame_id') as string
-    const stemMm = formData.get('stem_mm') as string
-    const spacerMm = formData.get('spacer_mm') as string
-    const barReachCategory = formData.get('bar_reach_category') as 'short' | 'med' | 'long'
+    try {
+      const name = formData.get('name') as string
+      const frameId = formData.get('frame_id') as string
+      const stemMm = formData.get('stem_mm') as string
+      const spacerMm = formData.get('spacer_mm') as string
+      const barReachCategory = formData.get('bar_reach_category') as 'short' | 'med' | 'long'
 
-    await createBike(session.user.id, {
-      name: name || undefined,
-      frame_id: frameId || undefined,
-      stem_mm: stemMm ? parseInt(stemMm) : undefined,
-      spacer_mm: spacerMm ? parseInt(spacerMm) : undefined,
-      bar_reach_category: barReachCategory || undefined,
-    })
+      // Validate required fields
+      if (!name || name.trim() === '') {
+        throw new Error('Bike name is required')
+      }
 
-    revalidatePath('/dashboard')
-    redirect('/dashboard')
+      // Parse and validate numbers
+      const stemValue = stemMm ? parseInt(stemMm, 10) : undefined
+      const spacerValue = spacerMm ? parseInt(spacerMm, 10) : undefined
+
+      if (stemValue !== undefined && (isNaN(stemValue) || stemValue < 40 || stemValue > 140)) {
+        throw new Error('Stem length must be between 40mm and 140mm')
+      }
+
+      if (spacerValue !== undefined && (isNaN(spacerValue) || spacerValue < 0 || spacerValue > 50)) {
+        throw new Error('Spacer stack must be between 0mm and 50mm')
+      }
+
+      await createBike(session.user.id, {
+        name: name.trim(),
+        frame_id: frameId || undefined,
+        stem_mm: stemValue,
+        spacer_mm: spacerValue,
+        bar_reach_category: barReachCategory || undefined,
+      })
+
+      revalidatePath('/dashboard')
+      redirect('/dashboard')
+    } catch (error) {
+      console.error('Error creating bike:', error)
+      throw error
+    }
   }
 
   return (
@@ -79,6 +101,7 @@ export default async function NewBikePage() {
                 type="text"
                 id="name"
                 name="name"
+                required
                 placeholder="e.g., My Gravel Bike, Roubaix, etc."
                 className="w-full px-4 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                 defaultValue="My Bike"
@@ -127,6 +150,7 @@ export default async function NewBikePage() {
                     type="number"
                     id="stem_mm"
                     name="stem_mm"
+                    required
                     placeholder="80"
                     min="40"
                     max="140"
@@ -145,6 +169,7 @@ export default async function NewBikePage() {
                     type="number"
                     id="spacer_mm"
                     name="spacer_mm"
+                    required
                     placeholder="10"
                     min="0"
                     max="50"

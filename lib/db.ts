@@ -125,6 +125,11 @@ export async function getBike(bikeId: string, userId: string) {
     .eq('user_id', userId)
     .single()
 
+  if (error && error.code === 'PGRST116') {
+    // Bike not found or user doesn't own it - return null
+    return null
+  }
+
   if (error) throw error
   return data
 }

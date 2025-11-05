@@ -2,10 +2,23 @@
 
 import Link from "next/link"
 import { signIn } from "next-auth/react"
+import { useState } from "react"
 
 export default function SignIn() {
+  const [error, setError] = useState<string | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+
   const handleGoogleSignIn = async () => {
-    await signIn('google', { callbackUrl: '/dashboard' })
+    try {
+      setError(null)
+      setIsLoading(true)
+      await signIn('google', { callbackUrl: '/dashboard' })
+    } catch (err) {
+      setError('Failed to sign in. Please try again.')
+      console.error('Sign in error:', err)
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -18,12 +31,19 @@ export default function SignIn() {
           </p>
         </div>
 
+        {error && (
+          <div className="p-4 mb-4 border border-red-200 bg-red-50 text-red-800 rounded-md text-sm">
+            {error}
+          </div>
+        )}
+
         <div className="space-y-4">
           <button
             onClick={handleGoogleSignIn}
-            className="w-full px-6 py-3 border border-border rounded-md hover:bg-accent transition-colors font-medium"
+            disabled={isLoading}
+            className="w-full px-6 py-3 border border-border rounded-md hover:bg-accent active:scale-[0.98] transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Continue with Google
+            {isLoading ? 'Signing in...' : 'Continue with Google'}
           </button>
 
           <button
