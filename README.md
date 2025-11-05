@@ -1,10 +1,6 @@
-<<<<<<< HEAD
-# BikeFitter_WebApp
-An app for the gravel cyclist out there. 
-=======
 # BikeFit - MVP
 
-Personalized bike cockpit fit recommendations based on body dimensions, flexibility, and riding style.
+Personalized bike cockpit fit recommendations based on body dimensions, flexibility, and riding style. An app for the gravel cyclist out there.
 
 ## Tech Stack
 
@@ -103,4 +99,3 @@ Environment + Scaffolding completed:
 ## License
 
 Private - All Rights Reserved
->>>>>>> claude/bike-fit-mvp-blueprint-011CUoQGxnJFy7Q9d7aQnvr7

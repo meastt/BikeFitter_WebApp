@@ -11,7 +11,7 @@ export function SubmitButton() {
       <button
         type="submit"
         disabled={pending}
-        className="flex-1 px-6 py-3 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
+        className="flex-1 px-6 py-3 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 active:scale-[0.98] active:bg-primary/80 transition-all font-medium disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 inline-flex items-center justify-center gap-2"
       >
         {pending ? (
           <>
@@ -43,7 +43,7 @@ export function SubmitButton() {
       </button>
       <Link
         href="/dashboard"
-        className={`px-6 py-3 border border-border rounded-md hover:bg-accent transition-colors font-medium ${
+        className={`px-6 py-3 border border-border rounded-md hover:bg-accent active:scale-[0.98] transition-all font-medium ${
           pending ? 'pointer-events-none opacity-50' : ''
         }`}
       >
