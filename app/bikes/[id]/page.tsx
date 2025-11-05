@@ -125,15 +125,9 @@ export default async function BikePage({ params }: { params: Promise<{ id: strin
           {/* Fit Recommendations - Placeholder for Phase 3 */}
           <div className="p-8 border border-dashed border-border rounded-lg text-center">
             <h2 className="text-2xl font-semibold mb-2">Fit Recommendations</h2>
-            <p className="text-muted-foreground mb-4">
-              Complete your rider profile to get personalized cockpit recommendations
+            <p className="text-muted-foreground">
+              Personalized cockpit recommendations coming soon
             </p>
-            <Link
-              href="/profile"
-              className="inline-block px-6 py-3 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 active:scale-[0.98] transition-all font-medium"
-            >
-              Complete Your Profile
-            </Link>
           </div>
         </div>
       </main>
