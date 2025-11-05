@@ -39,7 +39,7 @@ export default async function Dashboard() {
             }}>
               <button
                 type="submit"
-                className="px-4 py-2 text-sm border border-border rounded-md hover:bg-accent transition-colors"
+                className="px-4 py-2 text-sm border border-border rounded-md hover:bg-accent active:scale-[0.98] transition-all"
               >
                 Sign Out
               </button>
@@ -55,7 +55,7 @@ export default async function Dashboard() {
             <h2 className="text-4xl font-bold">Your Bikes</h2>
             <Link
               href="/bikes/new"
-              className="px-6 py-3 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors font-medium"
+              className="px-6 py-3 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 active:scale-[0.98] transition-all font-medium"
             >
               Add Bike
             </Link>
@@ -85,7 +85,7 @@ export default async function Dashboard() {
               </p>
               <Link
                 href="/bikes/new"
-                className="inline-block px-6 py-3 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors font-medium"
+                className="inline-block px-6 py-3 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 active:scale-[0.98] transition-all font-medium"
               >
                 Add Your First Bike
               </Link>
@@ -97,7 +97,7 @@ export default async function Dashboard() {
                 <Link
                   key={bike.id}
                   href={`/bikes/${bike.id}`}
-                  className="p-6 border border-border rounded-lg hover:border-primary transition-colors"
+                  className="p-6 border border-border rounded-lg hover:border-primary hover:shadow-sm active:scale-[0.99] transition-all"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1">

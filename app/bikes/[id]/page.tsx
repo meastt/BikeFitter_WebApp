@@ -3,15 +3,18 @@ import { redirect } from "next/navigation"
 import { getBike } from "@/lib/db"
 import Link from "next/link"
 
-export default async function BikePage({ params }: { params: { id: string } }) {
+export default async function BikePage({ params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
 
   if (!session?.user?.id) {
     redirect('/auth/signin')
   }
 
+  // Await params in Next.js 15+
+  const { id } = await params
+
   // Fetch the bike
-  const bike = await getBike(params.id, session.user.id)
+  const bike = await getBike(id, session.user.id)
 
   if (!bike) {
     redirect('/dashboard')
@@ -32,7 +35,7 @@ export default async function BikePage({ params }: { params: { id: string } }) {
           <div className="mb-8">
             <Link
               href="/dashboard"
-              className="text-sm text-muted-foreground hover:text-foreground transition-colors inline-flex items-center gap-1 mb-4"
+              className="text-sm text-muted-foreground hover:text-foreground active:scale-[0.98] transition-all inline-flex items-center gap-1 mb-4"
             >
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
@@ -127,7 +130,7 @@ export default async function BikePage({ params }: { params: { id: string } }) {
             </p>
             <Link
               href="/profile"
-              className="inline-block px-6 py-3 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors font-medium"
+              className="inline-block px-6 py-3 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 active:scale-[0.98] transition-all font-medium"
             >
               Complete Your Profile
             </Link>
