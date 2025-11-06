@@ -219,4 +219,41 @@ export async function deleteBike(bikeId: string, userId: string) {
 // ===================
 // FITS
 // ===================
-// Note: Fit recommendation functions will be implemented in Phase 3
+
+export async function createFit(bikeId: string, fitData: {
+  target_reach_mm: number
+  target_stack_mm: number
+  ideal_stem_mm: number
+  ideal_spacer_mm: number
+  ideal_bar_reach_mm: number
+  discomfort_score: number
+}) {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('fits')
+    .insert({
+      bike_id: bikeId,
+      ...fitData
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+  return data
+}
+
+export async function getLatestFit(bikeId: string) {
+  const supabase = await createClient()
+
+  const { data, error } = await supabase
+    .from('fits')
+    .select('*')
+    .eq('bike_id', bikeId)
+    .order('created_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+
+  if (error) throw error
+  return data
+}
