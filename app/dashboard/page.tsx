@@ -3,12 +3,13 @@ import { redirect } from "next/navigation"
 import Link from "next/link"
 import { getBikes, upsertUserProfile } from "@/lib/db"
 import { signOut } from "@/auth"
+import { ROUTES, APP_NAME } from "@/lib/constants"
 
 export default async function Dashboard() {
   const session = await auth()
 
   if (!session?.user?.email) {
-    redirect('/auth/signin')
+    redirect(ROUTES.signIn)
   }
 
   // Check if user ID exists in session
@@ -27,8 +28,14 @@ export default async function Dashboard() {
       {/* Header */}
       <header className="border-b">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <Link href="/dashboard" className="text-2xl font-bold">BikeFit</Link>
+          <Link href={ROUTES.dashboard} className="text-2xl font-bold">{APP_NAME}</Link>
           <div className="flex items-center gap-4">
+            <Link
+              href={ROUTES.profile}
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Profile
+            </Link>
             <span className="text-sm text-muted-foreground">
               {session.user.email}
             </span>
@@ -53,7 +60,7 @@ export default async function Dashboard() {
           <div className="flex items-center justify-between mb-8">
             <h2 className="text-4xl font-bold">Your Bikes</h2>
             <Link
-              href="/bikes/new"
+              href={ROUTES.newBike}
               className="px-6 py-3 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 active:scale-[0.98] transition-all font-medium"
             >
               Add Bike
@@ -83,7 +90,7 @@ export default async function Dashboard() {
                 Add your first bike to get personalized cockpit recommendations
               </p>
               <Link
-                href="/bikes/new"
+                href={ROUTES.newBike}
                 className="inline-block px-6 py-3 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 active:scale-[0.98] transition-all font-medium"
               >
                 Add Your First Bike
@@ -95,7 +102,7 @@ export default async function Dashboard() {
               {bikes.map((bike) => (
                 <Link
                   key={bike.id}
-                  href={`/bikes/${bike.id}`}
+                  href={ROUTES.bike(bike.id)}
                   className="p-6 border border-border rounded-lg hover:border-primary hover:shadow-sm active:scale-[0.99] transition-all"
                 >
                   <div className="flex items-start justify-between">
