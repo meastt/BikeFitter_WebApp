@@ -2,10 +2,10 @@ import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { listFrames, createBike } from "@/lib/db"
 import { revalidatePath } from "next/cache"
-import { SubmitButton } from "./SubmitButton"
 import { Header } from "@/components/header"
 import { BackButton } from "@/components/back-button"
-import { BIKE_SPECS, DEFAULT_BIKE_NAME, ROUTES } from "@/lib/constants"
+import { BIKE_SPECS, ROUTES } from "@/lib/constants"
+import { BikeForm } from "./BikeForm"
 
 export default async function NewBikePage() {
   const session = await auth()
@@ -27,14 +27,29 @@ export default async function NewBikePage() {
 
     try {
       const name = formData.get('name') as string
+      const geometryMode = formData.get('geometry_mode') as string
       const frameId = formData.get('frame_id') as string
       const stemMm = formData.get('stem_mm') as string
       const spacerMm = formData.get('spacer_mm') as string
       const barReachCategory = formData.get('bar_reach_category') as 'short' | 'med' | 'long'
 
+      // Manual geometry fields
+      const manualStackMm = formData.get('manual_stack_mm') as string
+      const manualReachMm = formData.get('manual_reach_mm') as string
+      const manualSeatTubeAngle = formData.get('manual_seat_tube_angle_deg') as string
+      const manualHeadTubeLength = formData.get('manual_head_tube_length_mm') as string
+      const manualWheelbase = formData.get('manual_wheelbase_mm') as string
+
       // Validate required fields
       if (!name || name.trim() === '') {
         throw new Error('Bike name is required')
+      }
+
+      // Validate geometry mode requirements
+      if (geometryMode === 'manual') {
+        if (!manualStackMm || !manualReachMm) {
+          throw new Error('Stack and Reach are required for manual geometry entry')
+        }
       }
 
       // Parse and validate numbers
@@ -49,12 +64,33 @@ export default async function NewBikePage() {
         throw new Error(`Spacer stack must be between ${BIKE_SPECS.spacer.min}mm and ${BIKE_SPECS.spacer.max}mm`)
       }
 
+      // Parse manual geometry
+      const manualStack = manualStackMm ? parseInt(manualStackMm, 10) : undefined
+      const manualReach = manualReachMm ? parseInt(manualReachMm, 10) : undefined
+      const manualSeatAngle = manualSeatTubeAngle ? parseFloat(manualSeatTubeAngle) : undefined
+      const manualHeadTube = manualHeadTubeLength ? parseInt(manualHeadTubeLength, 10) : undefined
+      const manualWheelbaseValue = manualWheelbase ? parseInt(manualWheelbase, 10) : undefined
+
+      // Validate manual geometry ranges
+      if (manualStack !== undefined && (isNaN(manualStack) || manualStack < 400 || manualStack > 700)) {
+        throw new Error('Stack must be between 400mm and 700mm')
+      }
+
+      if (manualReach !== undefined && (isNaN(manualReach) || manualReach < 300 || manualReach > 500)) {
+        throw new Error('Reach must be between 300mm and 500mm')
+      }
+
       await createBike(session.user.id, {
         name: name.trim(),
-        frame_id: frameId || undefined,
+        frame_id: geometryMode === 'database' && frameId ? frameId : undefined,
         stem_mm: stemValue,
         spacer_mm: spacerValue,
         bar_reach_category: barReachCategory || undefined,
+        manual_stack_mm: manualStack,
+        manual_reach_mm: manualReach,
+        manual_seat_tube_angle_deg: manualSeatAngle,
+        manual_head_tube_length_mm: manualHeadTube,
+        manual_wheelbase_mm: manualWheelbaseValue,
       })
 
       revalidatePath(ROUTES.dashboard)
@@ -80,115 +116,7 @@ export default async function NewBikePage() {
             </p>
           </div>
 
-          <form action={handleCreateBike} className="space-y-6">
-            {/* Bike Name */}
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium mb-2">
-                Bike Name
-              </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                required
-                placeholder="e.g., My Gravel Bike, Roubaix, etc."
-                className="w-full px-4 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                defaultValue={DEFAULT_BIKE_NAME}
-              />
-              <p className="text-xs text-muted-foreground mt-1">
-                Give your bike a memorable name
-              </p>
-            </div>
-
-            {/* Frame Selection */}
-            <div>
-              <label htmlFor="frame_id" className="block text-sm font-medium mb-2">
-                Frame Geometry
-              </label>
-              <select
-                id="frame_id"
-                name="frame_id"
-                className="w-full px-4 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-              >
-                <option value="">— Select a frame (or enter manually later) —</option>
-                {frames.map((frame) => (
-                  <option key={frame.id} value={frame.id}>
-                    {frame.brand} {frame.model} {frame.size} — Stack: {frame.stack_mm}mm / Reach: {frame.reach_mm}mm
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-muted-foreground mt-1">
-                Don't see your frame? You can enter geometry manually later
-              </p>
-            </div>
-
-            {/* Current Cockpit Setup */}
-            <div className="border-t border-border pt-6">
-              <h3 className="text-lg font-semibold mb-4">Current Cockpit Setup</h3>
-              <p className="text-sm text-muted-foreground mb-6">
-                Enter your current stem, spacers, and bar setup
-              </p>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {/* Stem Length */}
-                <div>
-                  <label htmlFor="stem_mm" className="block text-sm font-medium mb-2">
-                    {BIKE_SPECS.stem.label} ({BIKE_SPECS.stem.unit})
-                  </label>
-                  <input
-                    type="number"
-                    id="stem_mm"
-                    name="stem_mm"
-                    required
-                    placeholder={String(BIKE_SPECS.stem.default)}
-                    min={BIKE_SPECS.stem.min}
-                    max={BIKE_SPECS.stem.max}
-                    step={BIKE_SPECS.stem.step}
-                    className="w-full px-4 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                    defaultValue={BIKE_SPECS.stem.default}
-                  />
-                </div>
-
-                {/* Spacer Stack */}
-                <div>
-                  <label htmlFor="spacer_mm" className="block text-sm font-medium mb-2">
-                    {BIKE_SPECS.spacer.label} ({BIKE_SPECS.spacer.unit})
-                  </label>
-                  <input
-                    type="number"
-                    id="spacer_mm"
-                    name="spacer_mm"
-                    required
-                    placeholder={String(BIKE_SPECS.spacer.default)}
-                    min={BIKE_SPECS.spacer.min}
-                    max={BIKE_SPECS.spacer.max}
-                    step={BIKE_SPECS.spacer.step}
-                    className="w-full px-4 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                    defaultValue={BIKE_SPECS.spacer.default}
-                  />
-                </div>
-
-                {/* Bar Reach Category */}
-                <div>
-                  <label htmlFor="bar_reach_category" className="block text-sm font-medium mb-2">
-                    Bar Reach
-                  </label>
-                  <select
-                    id="bar_reach_category"
-                    name="bar_reach_category"
-                    className="w-full px-4 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                  >
-                    <option value={BIKE_SPECS.barReach.short.value}>{BIKE_SPECS.barReach.short.label}</option>
-                    <option value={BIKE_SPECS.barReach.med.value}>{BIKE_SPECS.barReach.med.label}</option>
-                    <option value={BIKE_SPECS.barReach.long.value}>{BIKE_SPECS.barReach.long.label}</option>
-                  </select>
-                </div>
-              </div>
-            </div>
-
-            {/* Submit Button */}
-            <SubmitButton />
-          </form>
+          <BikeForm frames={frames} action={handleCreateBike} />
         </div>
       </main>
     </div>
