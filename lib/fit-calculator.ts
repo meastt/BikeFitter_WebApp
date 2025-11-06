@@ -1,5 +1,5 @@
 /**
- * Bike Fit Calculator
+ * Bike Fit Calculator - Phase 4 Complete Spec
  *
  * Calculates personalized cockpit recommendations based on:
  * - Rider measurements (height, inseam, torso, arm length)
@@ -9,201 +9,233 @@
  * - Current setup (stem, spacers, bar reach)
  */
 
-type RiderProfile = {
-  height_cm: number
-  inseam_cm: number
-  torso_cm?: number
-  arm_cm?: number
-  flexibility_level?: number  // 1=low, 2=medium, 3=high
-  riding_style?: string       // comfort|endurance|race
-  pain_points?: string[]      // hands, neck, back, saddle
+// ===== Types =====
+
+export type RidingStyle = 'comfort' | 'endurance' | 'race'
+export type BarCategory = 'short' | 'med' | 'long'
+
+export type FitInput = {
+  torso_cm: number
+  arm_cm: number
+  flexibility_level: 1 | 2 | 3
+  riding_style: RidingStyle
+  pain_points: string[]
+  frame_reach_mm: number
+  stem_mm: number
+  spacer_mm: number
+  bar_reach_category: BarCategory
 }
 
-type BikeGeometry = {
-  stack_mm: number
-  reach_mm: number
-}
-
-type CurrentSetup = {
-  stem_mm?: number
-  spacer_mm?: number
-  bar_reach_category?: 'short' | 'med' | 'long'
-}
-
-type FitRecommendation = {
+export type FitResult = {
   target_reach_mm: number
-  target_stack_mm: number
+  target_drop_mm: number
   ideal_stem_mm: number
+  ideal_stem_range_mm: [number, number]
   ideal_spacer_mm: number
-  ideal_bar_reach_category: 'short' | 'med' | 'long'
-  discomfort_score: number
-  notes: string[]
+  ideal_spacer_range_mm: [number, number]
+  recommended_bar_reach_category: BarCategory
+  current_effective_reach_mm: number
+  reach_delta_mm: number
+  confidence: number
+  flags: string[]
+  rationale: string[]
 }
 
-/**
- * Calculate ideal cockpit position based on rider profile and bike geometry
- */
-export function calculateFit(
-  profile: RiderProfile,
-  geometry: BikeGeometry,
-  current?: CurrentSetup
-): FitRecommendation {
-  const notes: string[] = []
+// ===== Constants =====
 
-  // === STEP 1: Calculate base target reach ===
-  // Use torso length as primary factor (longer torso = more reach needed)
-  const torsoLength = profile.torso_cm || estimateTorso(profile.height_cm, profile.inseam_cm)
-  const armLength = profile.arm_cm || estimateArm(profile.height_cm)
+const BAR_REACH_MAP: Record<BarCategory, number> = {
+  short: 72,   // typical 70–75mm
+  med: 78,     // typical 75–80mm
+  long: 86     // typical 85mm+
+}
 
-  // Base reach from frame + stem
-  // Torso/inseam ratio affects ideal reach (more torso relative to legs = more reach)
-  const torsoInseamRatio = torsoLength / profile.inseam_cm
-  const baseReachMultiplier = 0.45 + (torsoInseamRatio - 0.6) * 0.3 // Typically 0.45-0.55
-  let targetReach = profile.height_cm * 10 * baseReachMultiplier
+const HOOD_TROUGH_OFFSET = 25
+// Distance from bar clamp center to hood trough center horizontally (approx)
 
-  // === STEP 2: Adjust for riding style ===
-  const ridingStyle = profile.riding_style || 'endurance'
-  if (ridingStyle === 'comfort') {
-    targetReach -= 20 // Shorter reach for more upright position
-    notes.push('Comfort position: shortened reach for upright posture')
-  } else if (ridingStyle === 'race') {
-    targetReach += 15 // Longer reach for aggressive position
-    notes.push('Race position: extended reach for aerodynamics')
+const STEM_SNAP_SIZES = [40, 50, 60, 70, 80, 90, 100, 110]
+
+const STEM_RANGE_PAD = 5  // ±5mm safe band
+const SPACER_RANGE_PAD = 5 // ±5mm safe band
+
+// Style target drops (hoods relative to saddle top) – conservative gravel leaning
+const TARGET_DROP_BY_STYLE: Record<RidingStyle, [number, number]> = {
+  comfort: [10, 25],    // mm below saddle
+  endurance: [20, 45],
+  race: [45, 80]
+}
+
+// ===== Utility Functions =====
+
+export function nearest(list: number[], x: number): number {
+  return list.reduce((p, c) => Math.abs(c - x) < Math.abs(p - x) ? c : p, list[0])
+}
+
+export function clamp(n: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, n))
+}
+
+// ===== Main Fit Calculation =====
+
+export function calculateFit(input: FitInput): FitResult {
+  const {
+    torso_cm,
+    arm_cm,
+    flexibility_level,
+    riding_style,
+    pain_points,
+    frame_reach_mm,
+    stem_mm,
+    spacer_mm,
+    bar_reach_category
+  } = input
+
+  // ===== STEP 1: Compute Target Reach =====
+  let targetReach = torso_cm * 10 * 0.43 + arm_cm * 10 * 0.35
+
+  // Flexibility modifiers
+  if (flexibility_level === 1) targetReach -= 15
+  if (flexibility_level === 3) targetReach += 10
+
+  // Riding style modifiers
+  if (riding_style === 'comfort') targetReach -= 20
+  if (riding_style === 'race') targetReach += 15
+
+  // Pain point modifiers
+  if (pain_points.includes('hands')) targetReach -= 10
+  if (pain_points.includes('neck')) targetReach -= 10
+  if (pain_points.includes('back')) targetReach -= 5
+
+  // Guardrails
+  targetReach = clamp(targetReach, 350, 520)
+
+  // ===== STEP 2: Compute Target Drop =====
+  const [dMin, dMax] = TARGET_DROP_BY_STYLE[riding_style]
+  let targetDrop = (dMin + dMax) / 2
+
+  // Flexibility adjustments
+  if (flexibility_level === 1) targetDrop -= 8   // Tighter hips/hamstrings
+  if (flexibility_level === 3) targetDrop += 5
+
+  // Pain point adjustments
+  if (pain_points.includes('neck')) targetDrop -= 5
+  if (pain_points.includes('hands')) targetDrop -= 3
+
+  // Clamp to style range
+  targetDrop = clamp(targetDrop, dMin, dMax)
+
+  // ===== STEP 3: Current Effective Reach =====
+  const barReach = BAR_REACH_MAP[bar_reach_category]
+  const currentEffectiveReach = frame_reach_mm + stem_mm + barReach + HOOD_TROUGH_OFFSET
+
+  // ===== STEP 4: Solve for Ideal Stem Length =====
+  let idealStemRaw = targetReach - (frame_reach_mm + barReach + HOOD_TROUGH_OFFSET)
+  let recommendedBar = bar_reach_category
+  let snappedStem = nearest(STEM_SNAP_SIZES, idealStemRaw)
+
+  // Bar category optimization if stem is out of bounds
+  if (snappedStem < 40) {
+    if (recommendedBar !== 'short') {
+      recommendedBar = 'short'
+      idealStemRaw = targetReach - (frame_reach_mm + BAR_REACH_MAP.short + HOOD_TROUGH_OFFSET)
+      snappedStem = nearest(STEM_SNAP_SIZES, idealStemRaw)
+    }
+  }
+  if (snappedStem > 110) {
+    if (recommendedBar !== 'long') {
+      recommendedBar = 'long'
+      idealStemRaw = targetReach - (frame_reach_mm + BAR_REACH_MAP.long + HOOD_TROUGH_OFFSET)
+      snappedStem = nearest(STEM_SNAP_SIZES, idealStemRaw)
+    }
   }
 
-  // === STEP 3: Adjust for flexibility ===
-  const flexibility = profile.flexibility_level || 2
-  if (flexibility === 1) {
-    targetReach -= 10 // Low flexibility = less aggressive
-    notes.push('Low flexibility: reducing reach to avoid overextension')
-  } else if (flexibility === 3) {
-    targetReach += 10 // High flexibility = can handle more aggressive
+  const stemRange: [number, number] = [
+    snappedStem - STEM_RANGE_PAD,
+    snappedStem + STEM_RANGE_PAD
+  ]
+
+  // ===== STEP 5: Solve for Ideal Spacer Stack =====
+  const targetBandMid = (dMin + dMax) / 2
+  let spacerDelta = 0
+  const isHigherDesired = targetDrop < targetBandMid
+
+  if (isHigherDesired) spacerDelta += 5
+  if (pain_points.includes('neck')) spacerDelta += 5
+  if (!isHigherDesired && flexibility_level === 3) spacerDelta -= 5
+
+  let idealSpacers = clamp(spacer_mm + spacerDelta, 0, 30)
+  const spacerRange: [number, number] = [
+    clamp(idealSpacers - SPACER_RANGE_PAD, 0, 30),
+    clamp(idealSpacers + SPACER_RANGE_PAD, 0, 30)
+  ]
+
+  // ===== STEP 6: Confidence & Flags =====
+  let confidence = 85
+  const flags: string[] = []
+
+  if (snappedStem <= 40 && targetReach < currentEffectiveReach) {
+    flags.push('frame_maybe_too_long')
+  }
+  if (snappedStem >= 110 && targetReach > currentEffectiveReach) {
+    flags.push('frame_maybe_too_short')
+  }
+  if (snappedStem <= 40 || snappedStem >= 110) {
+    flags.push('consider_bar_change')
   }
 
-  // === STEP 4: Adjust for pain points ===
-  const painPoints = profile.pain_points || []
-  if (painPoints.includes('hands')) {
-    targetReach -= 15
-    notes.push('Hand discomfort: reducing reach to take weight off hands')
+  if (snappedStem <= 40 || snappedStem >= 110) confidence -= 25
+  if (flexibility_level === 1 && riding_style === 'race') confidence -= 10
+  if ((pain_points?.length || 0) >= 2) confidence -= 5
+
+  confidence = clamp(confidence, 40, 95)
+
+  // ===== STEP 7: Reach Delta =====
+  const reachDelta = currentEffectiveReach - targetReach
+
+  // ===== STEP 8: Rationale =====
+  const rationale: string[] = []
+
+  if (pain_points.includes('hands')) {
+    rationale.push('Reduced forward reach to limit hand load.')
   }
-  if (painPoints.includes('neck')) {
-    notes.push('Neck discomfort: will raise bar height')
+  if (pain_points.includes('neck')) {
+    rationale.push('Raised bar height to reduce neck extension.')
   }
-
-  // === STEP 5: Calculate target stack ===
-  // Stack is how high the bars are relative to saddle
-  let targetStack = geometry.stack_mm
-
-  // Flexibility affects preferred stack (more flexible = can go lower)
-  if (flexibility === 1) {
-    targetStack += 20 // Raise bars for less flexible riders
-  } else if (flexibility === 3) {
-    targetStack -= 10 // Lower bars for flexible riders
+  if (pain_points.includes('back')) {
+    rationale.push('Shortened reach to reduce lower back strain.')
   }
-
-  // Riding style affects stack
-  if (ridingStyle === 'comfort') {
-    targetStack += 25 // Much higher for comfort
-  } else if (ridingStyle === 'race') {
-    targetStack -= 15 // Lower for race position
+  if (riding_style === 'comfort') {
+    rationale.push('Comfort posture shortens reach and reduces drop.')
   }
-
-  // Pain points affect stack
-  if (painPoints.includes('neck') || painPoints.includes('back')) {
-    targetStack += 20
-    notes.push('Back/neck pain: raising bar height to reduce strain')
+  if (riding_style === 'race') {
+    rationale.push('Race posture increases reach and drop for aerodynamics.')
   }
-
-  // === STEP 6: Calculate stem length recommendation ===
-  // Stem length makes up the difference between frame reach and target reach
-  const frameReach = geometry.reach_mm
-  const reachGap = targetReach - frameReach
-
-  // Arm length affects stem preference
-  const armMultiplier = armLength / 65 // 65cm is average
-  let idealStem = Math.round((80 + reachGap) * armMultiplier / 10) * 10 // Round to nearest 10mm
-
-  // Clamp to realistic range
-  idealStem = Math.max(60, Math.min(130, idealStem))
-
-  // === STEP 7: Calculate spacer stack recommendation ===
-  const stackGap = targetStack - geometry.stack_mm
-  let idealSpacer = Math.max(0, Math.round(stackGap / 5) * 5) // Round to nearest 5mm
-
-  // Clamp to realistic range (most steerer tubes allow 0-50mm spacers)
-  idealSpacer = Math.max(0, Math.min(50, idealSpacer))
-
-  // === STEP 8: Recommend bar reach category ===
-  // Bar reach is the horizontal distance from the bar clamp to the hoods
-  let idealBarReach: 'short' | 'med' | 'long' = 'med'
-
-  if (armLength < 60) {
-    idealBarReach = 'short'
-  } else if (armLength > 70) {
-    idealBarReach = 'long'
+  if (flexibility_level === 1) {
+    rationale.push('Limited flexibility requires more upright position.')
+  }
+  if (flexibility_level === 3) {
+    rationale.push('High flexibility allows for more aggressive position.')
   }
 
-  // Pain in hands suggests shorter bar reach
-  if (painPoints.includes('hands') && idealBarReach !== 'short') {
-    idealBarReach = idealBarReach === 'long' ? 'med' : 'short'
-    notes.push('Hand pain: suggesting shorter bar reach to reduce wrist extension')
-  }
-
-  // === STEP 9: Calculate discomfort score ===
-  // How far is current setup from ideal? (0 = perfect, 100 = very far off)
-  let discomfortScore = 0
-
-  if (current?.stem_mm) {
-    const stemDiff = Math.abs(current.stem_mm - idealStem)
-    discomfortScore += Math.min(40, stemDiff / 2) // Up to 40 points for stem
-  }
-
-  if (current?.spacer_mm !== undefined) {
-    const spacerDiff = Math.abs(current.spacer_mm - idealSpacer)
-    discomfortScore += Math.min(30, spacerDiff) // Up to 30 points for spacers
-  }
-
-  if (current?.bar_reach_category && current.bar_reach_category !== idealBarReach) {
-    discomfortScore += 20 // 20 points for wrong bar reach
-  }
-
-  // Pain points add to discomfort if setup isn't ideal
-  discomfortScore += painPoints.length * 5
-
-  discomfortScore = Math.round(Math.min(100, discomfortScore))
-
+  // ===== Return Result =====
   return {
     target_reach_mm: Math.round(targetReach),
-    target_stack_mm: Math.round(targetStack),
-    ideal_stem_mm: idealStem,
-    ideal_spacer_mm: idealSpacer,
-    ideal_bar_reach_category: idealBarReach,
-    discomfort_score: discomfortScore,
-    notes
+    target_drop_mm: Math.round(targetDrop),
+    ideal_stem_mm: snappedStem,
+    ideal_stem_range_mm: [stemRange[0], stemRange[1]],
+    ideal_spacer_mm: Math.round(idealSpacers),
+    ideal_spacer_range_mm: [spacerRange[0], spacerRange[1]],
+    recommended_bar_reach_category: recommendedBar,
+    current_effective_reach_mm: Math.round(currentEffectiveReach),
+    reach_delta_mm: Math.round(reachDelta),
+    confidence,
+    flags,
+    rationale
   }
 }
 
-/**
- * Estimate torso length from height and inseam if not provided
- */
-function estimateTorso(heightCm: number, inseamCm: number): number {
-  // Torso is roughly what's left after legs
-  // Average person: inseam is ~45% of height, torso ~32%
-  return Math.round(heightCm * 0.32)
-}
+// ===== Helper Functions for Display =====
 
-/**
- * Estimate arm length from height if not provided
- */
-function estimateArm(heightCm: number): number {
-  // Arm length is roughly 38% of height
-  return Math.round(heightCm * 0.38)
-}
-
-/**
- * Get bar reach range in mm for a category
- */
-export function getBarReachRange(category: 'short' | 'med' | 'long'): [number, number] {
+export function getBarReachRange(category: BarCategory): [number, number] {
   switch (category) {
     case 'short': return [70, 75]
     case 'med': return [75, 80]
@@ -211,21 +243,33 @@ export function getBarReachRange(category: 'short' | 'med' | 'long'): [number, n
   }
 }
 
-/**
- * Get discomfort level label
- */
-export function getDiscomfortLevel(score: number): {
-  level: 'optimal' | 'minor' | 'moderate' | 'significant'
+export function getBarReachValue(category: BarCategory): number {
+  return BAR_REACH_MAP[category]
+}
+
+export function getConfidenceLevel(score: number): {
+  level: 'high' | 'medium' | 'low'
   label: string
   color: string
 } {
-  if (score < 15) {
-    return { level: 'optimal', label: 'Optimal fit', color: 'text-green-600' }
-  } else if (score < 35) {
-    return { level: 'minor', label: 'Minor adjustments recommended', color: 'text-yellow-600' }
-  } else if (score < 60) {
-    return { level: 'moderate', label: 'Moderate issues detected', color: 'text-orange-600' }
+  if (score >= 75) {
+    return { level: 'high', label: 'High confidence', color: 'text-green-600' }
+  } else if (score >= 55) {
+    return { level: 'medium', label: 'Medium confidence', color: 'text-yellow-600' }
   } else {
-    return { level: 'significant', label: 'Significant fit issues', color: 'text-red-600' }
+    return { level: 'low', label: 'Low confidence - review recommended', color: 'text-orange-600' }
+  }
+}
+
+export function getFlagMessage(flag: string): string {
+  switch (flag) {
+    case 'frame_maybe_too_long':
+      return 'Frame reach may be too long for your proportions'
+    case 'frame_maybe_too_short':
+      return 'Frame reach may be too short for your proportions'
+    case 'consider_bar_change':
+      return 'Consider changing bar reach category for better fit'
+    default:
+      return flag
   }
 }
