@@ -95,7 +95,7 @@ export default async function BikePage({ params }: { params: Promise<{ id: strin
                   <div className="text-2xl font-bold">{bike.stem_mm}mm</div>
                 </div>
               )}
-              {bike.spacer_mm !== null && bike.spacer_mm !== undefined && (
+              {bike.spacer_mm != null && (
                 <div>
                   <div className="text-sm text-muted-foreground">Spacer Stack</div>
                   <div className="text-2xl font-bold">{bike.spacer_mm}mm</div>
