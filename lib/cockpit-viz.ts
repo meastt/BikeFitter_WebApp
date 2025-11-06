@@ -39,44 +39,34 @@ export type VizInput = {
 }
 
 export type SvgModel = {
-  size: {
-    width: number
-    height: number
-    padding: number
-  }
-  frame: {
-    bb: { x: number; y: number }
-    headTop: { x: number; y: number }
-    reachLine: { x1: number; y1: number; x2: number; y2: number }
-    stackLine: { x1: number; y1: number; x2: number; y2: number }
-  }
-  current: {
-    stemPx: number
-    barPx: number
-    stemEnd: { x: number; y: number }
-    barEnd: { x: number; y: number }
+  width: number
+  height: number
+  padding: number
+  frameReachPx: number
+  frameStackPx: number
+  xScale: number
+  yScale: number
+  cur: {
+    stem: { x1: number; y1: number; x2: number; y2: number }
+    bar: { x1: number; y1: number; x2: number; y2: number }
     hood: { x: number; y: number }
   }
-  target: {
-    stemPx: number
-    barPx: number
-    stemEnd: { x: number; y: number }
-    barEnd: { x: number; y: number }
+  tgt: {
+    stem: { x1: number; y1: number; x2: number; y2: number }
+    bar: { x1: number; y1: number; x2: number; y2: number }
     hood: { x: number; y: number }
   }
   deltas: {
-    reach: number
-    drop: number
-    reachColor: 'green' | 'amber' | 'red'
-    dropColor: 'green' | 'amber' | 'red'
-  }
-  bands: {
-    stemRange: [number, number]
-    spacerRange: [number, number]
-  }
-  scale: {
-    xScale: number
-    yScale: number
+    reach: {
+      value: number
+      color: string
+      text: string
+    }
+    drop: {
+      value: number
+      color: string
+      text: string
+    }
   }
 }
 
@@ -87,24 +77,15 @@ const HOOD_OFFSET = 25 // mm horizontal offset from bar to hood trough
 
 // ===== Color Semantics =====
 
-export function getDeltaColor(delta: number): 'green' | 'amber' | 'red' {
+export function getDeltaColor(delta: number): string {
   const abs = Math.abs(delta)
-  if (abs <= 10) return 'green'
-  if (abs <= 25) return 'amber'
-  return 'red'
+  if (abs <= 10) return 'stroke-green-500'
+  if (abs <= 25) return 'stroke-amber-500'
+  return 'stroke-red-500'
 }
 
-export const DELTA_COLORS = {
-  green: '#10B981',
-  amber: '#F59E0B',
-  red: '#EF4444',
-}
-
-export const COCKPIT_COLORS = {
-  current: '#9CA3AF', // Neutral-400
-  target: '#2563EB', // Blue-600
-  grid: 'rgba(0,0,0,0.06)',
-  frame: '#6B7280', // Neutral-500
+export function formatDelta(delta: number): string {
+  return delta > 0 ? `+${delta} mm` : `${delta} mm`
 }
 
 // ===== Projection Utility =====
@@ -190,40 +171,54 @@ export function projectToSvgModel(
   const dropColor = getDeltaColor(dropDelta)
 
   return {
-    size: { width, height, padding },
-    frame: {
-      bb: { x: bbX, y: bbY },
-      headTop: { x: headTopX, y: headTopY },
-      reachLine: { x1: bbX, y1: bbY, x2: headTopX, y2: bbY },
-      stackLine: { x1: headTopX, y1: bbY, x2: headTopX, y2: headTopY },
-    },
-    current: {
-      stemPx: currentStemPx,
-      barPx: currentBarPx,
-      stemEnd: { x: currentStemEndX, y: currentStemEndY },
-      barEnd: { x: currentBarEndX, y: currentBarEndY },
+    width,
+    height,
+    padding,
+    frameReachPx,
+    frameStackPx,
+    xScale: scale,
+    yScale: scale,
+    cur: {
+      stem: {
+        x1: headTopX,
+        y1: headTopY - currentSpacerPx,
+        x2: currentStemEndX,
+        y2: currentStemEndY,
+      },
+      bar: {
+        x1: currentStemEndX,
+        y1: currentStemEndY,
+        x2: currentBarEndX,
+        y2: currentBarEndY,
+      },
       hood: { x: currentHoodX, y: currentHoodY },
     },
-    target: {
-      stemPx: targetStemPx,
-      barPx: targetBarPx,
-      stemEnd: { x: targetStemEndX, y: targetStemEndY },
-      barEnd: { x: targetBarEndX, y: targetBarEndY },
+    tgt: {
+      stem: {
+        x1: headTopX,
+        y1: headTopY - targetSpacerPx,
+        x2: targetStemEndX,
+        y2: targetStemEndY,
+      },
+      bar: {
+        x1: targetStemEndX,
+        y1: targetStemEndY,
+        x2: targetBarEndX,
+        y2: targetBarEndY,
+      },
       hood: { x: targetHoodX, y: targetHoodY },
     },
     deltas: {
-      reach: reachDelta,
-      drop: dropDelta,
-      reachColor,
-      dropColor,
-    },
-    bands: {
-      stemRange: target.ideal_stem_range_mm,
-      spacerRange: target.ideal_spacer_range_mm,
-    },
-    scale: {
-      xScale: scale,
-      yScale: scale,
+      reach: {
+        value: reachDelta,
+        color: reachColor,
+        text: formatDelta(reachDelta),
+      },
+      drop: {
+        value: dropDelta,
+        color: dropColor,
+        text: formatDelta(dropDelta),
+      },
     },
   }
 }

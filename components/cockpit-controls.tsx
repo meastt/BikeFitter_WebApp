@@ -12,6 +12,8 @@ type CockpitControlsProps = {
   idealStem: number
   idealSpacers: number
   idealBarCategory: BarCategory
+  reachDelta: number
+  dropDelta: number
   onReset: () => void
   onApply: () => void
   isApplying?: boolean
@@ -29,6 +31,8 @@ export function CockpitControls({
   idealStem,
   idealSpacers,
   idealBarCategory,
+  reachDelta,
+  dropDelta,
   onReset,
   onApply,
   isApplying = false,
@@ -40,43 +44,55 @@ export function CockpitControls({
     onStem(STEM_SIZES[value])
   }
 
+  // Live helper text
+  const getReachHelper = () => {
+    const abs = Math.abs(reachDelta)
+    if (abs <= 3) return '✅ Perfect reach match'
+    if (abs <= 10) return `Within +${abs}mm of ideal reach (excellent)`
+    if (abs <= 25) return `${reachDelta > 0 ? 'Too long' : 'Too short'} by ${abs}mm (minor)`
+    return `${reachDelta > 0 ? 'Too long' : 'Too short'} by ${abs}mm (significant)`
+  }
+
+  const getDropHelper = () => {
+    const abs = Math.abs(dropDelta)
+    if (abs <= 3) return '✅ Perfect bar height'
+    if (abs <= 10) return `Bar height ${dropDelta > 0 ? 'lower' : 'higher'} by ${abs}mm (OK)`
+    return `Bar ${dropDelta > 0 ? 'too low' : 'too high'} by ${abs}mm`
+  }
+
   return (
     <div className="space-y-6">
-      {/* Stem Length */}
-      <div>
-        <label className="block text-sm font-medium mb-2">
-          Stem Length
-          <span className="ml-2 text-xs text-muted-foreground">
-            (Recommended: {idealStem}mm)
-          </span>
-        </label>
-        <div className="flex items-center gap-4">
+      {/* 3-column grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Stem Length */}
+        <div>
+          <label className="block text-sm font-medium mb-2">
+            Stem Length
+          </label>
           <input
             type="range"
             min="0"
             max={STEM_SIZES.length - 1}
             value={stemIndex}
             onChange={(e) => handleStemSlider(Number(e.target.value))}
-            className="flex-1 h-2 bg-neutral-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+            className="w-full h-2 bg-neutral-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
             aria-label={`Stem length slider, current ${stem}mm, recommended ${idealStem}mm`}
           />
-          <div className="w-16 text-right font-semibold text-lg">{stem}mm</div>
+          <div className="flex justify-between items-center mt-2">
+            <span className="text-xs text-muted-foreground">40mm</span>
+            <span className="text-lg font-bold text-blue-600">{stem}mm</span>
+            <span className="text-xs text-muted-foreground">110mm</span>
+          </div>
+          <div className="mt-1 text-xs text-muted-foreground">
+            Ideal: {idealStem}mm
+          </div>
         </div>
-        <div className="flex justify-between text-xs text-muted-foreground mt-1">
-          <span>40mm</span>
-          <span>110mm</span>
-        </div>
-      </div>
 
-      {/* Spacer Stack */}
-      <div>
-        <label className="block text-sm font-medium mb-2">
-          Spacer Stack
-          <span className="ml-2 text-xs text-muted-foreground">
-            (Recommended: {idealSpacers}mm)
-          </span>
-        </label>
-        <div className="flex items-center gap-4">
+        {/* Spacer Stack */}
+        <div>
+          <label className="block text-sm font-medium mb-2">
+            Spacer Stack
+          </label>
           <input
             type="range"
             min="0"
@@ -84,48 +100,67 @@ export function CockpitControls({
             step="5"
             value={spacers}
             onChange={(e) => onSpacers(Number(e.target.value))}
-            className="flex-1 h-2 bg-neutral-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
+            className="w-full h-2 bg-neutral-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
             aria-label={`Spacer stack slider, current ${spacers}mm, recommended ${idealSpacers}mm`}
           />
-          <div className="w-16 text-right font-semibold text-lg">{spacers}mm</div>
+          <div className="flex justify-between items-center mt-2">
+            <span className="text-xs text-muted-foreground">0mm</span>
+            <span className="text-lg font-bold text-blue-600">{spacers}mm</span>
+            <span className="text-xs text-muted-foreground">30mm</span>
+          </div>
+          <div className="mt-1 text-xs text-muted-foreground">
+            Ideal: {idealSpacers}mm
+          </div>
         </div>
-        <div className="flex justify-between text-xs text-muted-foreground mt-1">
-          <span>0mm</span>
-          <span>30mm</span>
+
+        {/* Bar Reach Category */}
+        <div>
+          <label className="block text-sm font-medium mb-2">
+            Bar Reach
+          </label>
+          <div className="flex gap-1 h-10">
+            {(['short', 'med', 'long'] as const).map((cat) => (
+              <button
+                key={cat}
+                onClick={() => onBarCategory(cat)}
+                className={`flex-1 px-2 py-2 rounded border-2 transition-all text-xs font-medium ${
+                  barCategory === cat
+                    ? 'border-blue-600 bg-blue-50 dark:bg-blue-950 text-blue-900 dark:text-blue-100'
+                    : 'border-neutral-300 bg-white dark:bg-neutral-800 hover:border-blue-400'
+                }`}
+                aria-label={`Select ${cat} reach bars, ${getBarReachValue(cat)}mm`}
+              >
+                {cat === 'med' ? 'Med' : cat.charAt(0).toUpperCase() + cat.slice(1)}
+              </button>
+            ))}
+          </div>
+          <div className="mt-2 text-center">
+            <span className="text-lg font-bold text-blue-600">
+              {getBarReachValue(barCategory)}mm
+            </span>
+          </div>
+          <div className="mt-1 text-xs text-muted-foreground text-center">
+            Ideal: {idealBarCategory} ({getBarReachValue(idealBarCategory)}mm)
+          </div>
         </div>
       </div>
 
-      {/* Bar Reach Category */}
-      <div>
-        <label className="block text-sm font-medium mb-2">
-          Bar Reach Category
-          <span className="ml-2 text-xs text-muted-foreground">
-            (Recommended: {idealBarCategory})
-          </span>
-        </label>
-        <div className="flex gap-2">
-          {(['short', 'med', 'long'] as const).map((cat) => (
-            <button
-              key={cat}
-              onClick={() => onBarCategory(cat)}
-              className={`flex-1 px-4 py-3 rounded-lg border-2 transition-all font-medium ${
-                barCategory === cat
-                  ? 'border-blue-600 bg-blue-50 dark:bg-blue-950 text-blue-900 dark:text-blue-100'
-                  : 'border-neutral-300 bg-white dark:bg-neutral-800 hover:border-blue-400'
-              }`}
-              aria-label={`Select ${cat} reach bars, ${getBarReachValue(cat)}mm`}
-            >
-              <div className="capitalize text-sm">{cat}</div>
-              <div className="text-xs text-muted-foreground mt-1">
-                {getBarReachValue(cat)}mm
-              </div>
-            </button>
-          ))}
+      {/* Live helper text */}
+      <div className="p-3 bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-lg">
+        <div className="text-sm space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="text-blue-900 dark:text-blue-100 font-medium">Reach:</span>
+            <span className="text-blue-700 dark:text-blue-200">{getReachHelper()}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-blue-900 dark:text-blue-100 font-medium">Drop:</span>
+            <span className="text-blue-700 dark:text-blue-200">{getDropHelper()}</span>
+          </div>
         </div>
       </div>
 
       {/* Action Buttons */}
-      <div className="flex gap-3 pt-4 border-t border-border">
+      <div className="flex gap-3">
         <button
           onClick={onReset}
           className="flex-1 px-4 py-2 border border-neutral-300 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors font-medium"
@@ -141,13 +176,6 @@ export function CockpitControls({
         >
           {isApplying ? 'Applying...' : 'Apply to Bike'}
         </button>
-      </div>
-
-      {/* Helper Text */}
-      <div className="text-xs text-muted-foreground">
-        <p>
-          💡 Adjust controls to explore different cockpit setups. Changes update the visualization in real-time.
-        </p>
       </div>
     </div>
   )
