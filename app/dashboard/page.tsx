@@ -117,7 +117,7 @@ export default async function Dashboard() {
                             <span className="font-medium">{bike.stem_mm}mm</span>
                           </div>
                         )}
-                        {bike.spacer_mm !== null && (
+                        {bike.spacer_mm != null && (
                           <div>
                             <span className="text-muted-foreground">Spacers:</span>{' '}
                             <span className="font-medium">{bike.spacer_mm}mm</span>

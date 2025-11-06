@@ -2,14 +2,16 @@ import { auth } from "@/auth"
 import { redirect } from "next/navigation"
 import { listFrames, createBike } from "@/lib/db"
 import { revalidatePath } from "next/cache"
-import Link from "next/link"
 import { SubmitButton } from "./SubmitButton"
+import { Header } from "@/components/header"
+import { BackButton } from "@/components/back-button"
+import { BIKE_SPECS, DEFAULT_BIKE_NAME, ROUTES } from "@/lib/constants"
 
 export default async function NewBikePage() {
   const session = await auth()
 
   if (!session?.user?.id) {
-    redirect('/auth/signin')
+    redirect(ROUTES.signIn)
   }
 
   // Fetch available frames
@@ -20,7 +22,7 @@ export default async function NewBikePage() {
 
     const session = await auth()
     if (!session?.user?.id) {
-      redirect('/auth/signin')
+      redirect(ROUTES.signIn)
     }
 
     try {
@@ -39,12 +41,12 @@ export default async function NewBikePage() {
       const stemValue = stemMm ? parseInt(stemMm, 10) : undefined
       const spacerValue = spacerMm ? parseInt(spacerMm, 10) : undefined
 
-      if (stemValue !== undefined && (isNaN(stemValue) || stemValue < 40 || stemValue > 140)) {
-        throw new Error('Stem length must be between 40mm and 140mm')
+      if (stemValue !== undefined && (isNaN(stemValue) || stemValue < BIKE_SPECS.stem.min || stemValue > BIKE_SPECS.stem.max)) {
+        throw new Error(`Stem length must be between ${BIKE_SPECS.stem.min}mm and ${BIKE_SPECS.stem.max}mm`)
       }
 
-      if (spacerValue !== undefined && (isNaN(spacerValue) || spacerValue < 0 || spacerValue > 50)) {
-        throw new Error('Spacer stack must be between 0mm and 50mm')
+      if (spacerValue !== undefined && (isNaN(spacerValue) || spacerValue < BIKE_SPECS.spacer.min || spacerValue > BIKE_SPECS.spacer.max)) {
+        throw new Error(`Spacer stack must be between ${BIKE_SPECS.spacer.min}mm and ${BIKE_SPECS.spacer.max}mm`)
       }
 
       await createBike(session.user.id, {
@@ -55,8 +57,8 @@ export default async function NewBikePage() {
         bar_reach_category: barReachCategory || undefined,
       })
 
-      revalidatePath('/dashboard')
-      redirect('/dashboard')
+      revalidatePath(ROUTES.dashboard)
+      redirect(ROUTES.dashboard)
     } catch (error) {
       console.error('Error creating bike:', error)
       throw error
@@ -65,26 +67,13 @@ export default async function NewBikePage() {
 
   return (
     <div className="min-h-screen">
-      {/* Header */}
-      <header className="border-b">
-        <div className="container mx-auto px-4 py-4">
-          <Link href="/dashboard" className="text-2xl font-bold">BikeFit</Link>
-        </div>
-      </header>
+      <Header />
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-16">
         <div className="max-w-2xl mx-auto">
           <div className="mb-8">
-            <Link
-              href="/dashboard"
-              className="text-sm text-muted-foreground hover:text-foreground active:scale-[0.98] transition-all inline-flex items-center gap-1 mb-4"
-            >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-              </svg>
-              Back to Dashboard
-            </Link>
+            <BackButton />
             <h1 className="text-4xl font-bold">Add a Bike</h1>
             <p className="text-muted-foreground mt-2">
               Enter your bike's details to get personalized fit recommendations
@@ -104,7 +93,7 @@ export default async function NewBikePage() {
                 required
                 placeholder="e.g., My Gravel Bike, Roubaix, etc."
                 className="w-full px-4 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                defaultValue="My Bike"
+                defaultValue={DEFAULT_BIKE_NAME}
               />
               <p className="text-xs text-muted-foreground mt-1">
                 Give your bike a memorable name
@@ -144,38 +133,38 @@ export default async function NewBikePage() {
                 {/* Stem Length */}
                 <div>
                   <label htmlFor="stem_mm" className="block text-sm font-medium mb-2">
-                    Stem Length (mm)
+                    {BIKE_SPECS.stem.label} ({BIKE_SPECS.stem.unit})
                   </label>
                   <input
                     type="number"
                     id="stem_mm"
                     name="stem_mm"
                     required
-                    placeholder="80"
-                    min="40"
-                    max="140"
-                    step="10"
+                    placeholder={String(BIKE_SPECS.stem.default)}
+                    min={BIKE_SPECS.stem.min}
+                    max={BIKE_SPECS.stem.max}
+                    step={BIKE_SPECS.stem.step}
                     className="w-full px-4 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                    defaultValue="80"
+                    defaultValue={BIKE_SPECS.stem.default}
                   />
                 </div>
 
                 {/* Spacer Stack */}
                 <div>
                   <label htmlFor="spacer_mm" className="block text-sm font-medium mb-2">
-                    Spacer Stack (mm)
+                    {BIKE_SPECS.spacer.label} ({BIKE_SPECS.spacer.unit})
                   </label>
                   <input
                     type="number"
                     id="spacer_mm"
                     name="spacer_mm"
                     required
-                    placeholder="10"
-                    min="0"
-                    max="50"
-                    step="5"
+                    placeholder={String(BIKE_SPECS.spacer.default)}
+                    min={BIKE_SPECS.spacer.min}
+                    max={BIKE_SPECS.spacer.max}
+                    step={BIKE_SPECS.spacer.step}
                     className="w-full px-4 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
-                    defaultValue="10"
+                    defaultValue={BIKE_SPECS.spacer.default}
                   />
                 </div>
 
@@ -189,9 +178,9 @@ export default async function NewBikePage() {
                     name="bar_reach_category"
                     className="w-full px-4 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
                   >
-                    <option value="short">Short (70–75mm)</option>
-                    <option value="med">Medium (75–80mm)</option>
-                    <option value="long">Long (85mm+)</option>
+                    <option value={BIKE_SPECS.barReach.short.value}>{BIKE_SPECS.barReach.short.label}</option>
+                    <option value={BIKE_SPECS.barReach.med.value}>{BIKE_SPECS.barReach.med.label}</option>
+                    <option value={BIKE_SPECS.barReach.long.value}>{BIKE_SPECS.barReach.long.label}</option>
                   </select>
                 </div>
               </div>
