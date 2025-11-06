@@ -31,7 +31,7 @@ type ServerOnly = {
  *
  * @returns Supabase client with service role permissions
  */
-export async function createClient(): Promise<ReturnType<typeof createSupabaseClient> & ServerOnly> {
+export async function createClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
 
@@ -49,5 +49,5 @@ export async function createClient(): Promise<ReturnType<typeof createSupabaseCl
     },
   })
 
-  return client as typeof client & ServerOnly
+  return client
 }

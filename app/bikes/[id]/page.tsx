@@ -19,13 +19,18 @@ export default async function BikePage({ params }: { params: Promise<{ id: strin
   // Await params in Next.js 15+
   const { id } = await params
 
-  // Fetch the bike and profile
-  const bike = await getBike(id, session.user.id)
-  const profile = await getUserProfile(session.user.id)
+  // Fetch the bike - redirect if not found
+  const bikeOrNull = await getBike(id, session.user.id)
 
-  if (!bike) {
+  if (!bikeOrNull) {
     redirect(ROUTES.dashboard)
   }
+
+  // Type assertion after redirect check - we know redirect() never returns
+  const bike = bikeOrNull
+
+  // Fetch profile separately to avoid TS control flow confusion
+  const profile = await getUserProfile(session.user.id)
 
   // Check if profile is complete
   const hasProfile = profile && profile.height_cm && profile.inseam_cm
