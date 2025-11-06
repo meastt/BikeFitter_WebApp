@@ -1,9 +1,10 @@
 import { auth } from "@/auth"
 import { redirect } from "next/navigation"
-import { getBike } from "@/lib/db"
+import { getBike, getUserProfile } from "@/lib/db"
 import { Header } from "@/components/header"
 import { BackButton } from "@/components/back-button"
 import { ROUTES } from "@/lib/constants"
+import Link from "next/link"
 
 export default async function BikePage({ params }: { params: Promise<{ id: string }> }) {
   const session = await auth()
@@ -15,12 +16,16 @@ export default async function BikePage({ params }: { params: Promise<{ id: strin
   // Await params in Next.js 15+
   const { id } = await params
 
-  // Fetch the bike
+  // Fetch the bike and profile
   const bike = await getBike(id, session.user.id)
+  const profile = await getUserProfile(session.user.id)
 
   if (!bike) {
     redirect(ROUTES.dashboard)
   }
+
+  // Check if profile is complete
+  const hasProfile = profile && profile.height_cm && profile.inseam_cm
 
   return (
     <div className="min-h-screen">
@@ -111,12 +116,26 @@ export default async function BikePage({ params }: { params: Promise<{ id: strin
             </div>
           </div>
 
-          {/* Fit Recommendations - Placeholder for Phase 3 */}
+          {/* Fit Recommendations */}
           <div className="p-8 border border-dashed border-border rounded-lg text-center">
             <h2 className="text-2xl font-semibold mb-2">Fit Recommendations</h2>
-            <p className="text-muted-foreground">
-              Personalized cockpit recommendations coming soon
-            </p>
+            {hasProfile ? (
+              <p className="text-muted-foreground">
+                Fit calculations coming in Phase 3
+              </p>
+            ) : (
+              <>
+                <p className="text-muted-foreground mb-4">
+                  Complete your rider profile to get personalized cockpit recommendations
+                </p>
+                <Link
+                  href={ROUTES.profile}
+                  className="inline-block px-6 py-3 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 active:scale-[0.98] transition-all font-medium"
+                >
+                  Complete Your Profile
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </main>
