@@ -69,6 +69,7 @@ export default async function ProfilePage() {
 
       revalidatePath(ROUTES.profile)
       revalidatePath(ROUTES.dashboard)
+      redirect(ROUTES.dashboard)
     } catch (error) {
       console.error('Error updating profile:', error)
       throw error

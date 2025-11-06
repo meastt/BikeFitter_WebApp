@@ -38,10 +38,17 @@ export async function upsertUserProfile(userId: string, email: string, profile?:
 }>) {
   const supabase = await createClient()
 
+  // Filter out undefined values - Supabase doesn't accept them
+  const filteredProfile = profile
+    ? Object.fromEntries(
+        Object.entries(profile).filter(([_, value]) => value !== undefined)
+      )
+    : {}
+
   const payload = {
     id: userId,
     email,
-    ...profile,
+    ...filteredProfile,
     updated_at: new Date().toISOString()
   }
 
