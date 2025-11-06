@@ -8,7 +8,6 @@ import { CockpitHeader } from './cockpit-header'
 import { getBarReachValue, type BarCategory } from '@/lib/fit-calculator'
 import { updateBikeCockpit } from '@/app/bikes/[id]/actions'
 import { useRouter } from 'next/navigation'
-import { toPng } from 'html-to-image'
 
 type CockpitDeltaCardProps = {
   viz: VizInput
@@ -62,34 +61,43 @@ export function CockpitDeltaCard({ viz, bikeId, currentBarCategory }: CockpitDel
 
   // Apply changes to bike
   const handleApply = async () => {
-    try {
-      setIsApplying(true)
+    setIsApplying(true)
 
-      await updateBikeCockpit(bikeId, {
+    try {
+      const result = await updateBikeCockpit(bikeId, {
         stem_mm: stem,
         spacer_mm: spacers,
         bar_reach_category: barCategory,
       })
 
-      // Show success message (you could use toast here)
+      if (!result.success) {
+        // Show user-friendly error message
+        alert(`❌ ${result.error}`)
+        return
+      }
+
+      // Show success message
       alert('✓ Cockpit settings applied successfully!')
 
       // Refresh the page to show updated data
       router.refresh()
     } catch (error) {
-      console.error('Failed to apply cockpit settings:', error)
-      alert('Failed to apply settings. Please try again.')
+      console.error('Unexpected error applying cockpit settings:', error)
+      alert('An unexpected error occurred. Please try again.')
     } finally {
       setIsApplying(false)
     }
   }
 
-  // Export as PNG
+  // Export as PNG (lazy loads html-to-image)
   const handleExport = async () => {
     if (!svgRef.current) return
 
+    setIsExporting(true)
+
     try {
-      setIsExporting(true)
+      // Lazy load html-to-image (589 KB) only when needed
+      const { toPng } = await import('html-to-image')
 
       const dataUrl = await toPng(svgRef.current, {
         pixelRatio: 2,

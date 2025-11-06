@@ -19,13 +19,18 @@ export default async function BikePage({ params }: { params: Promise<{ id: strin
   // Await params in Next.js 15+
   const { id } = await params
 
-  // Fetch the bike and profile
-  const bike = await getBike(id, session.user.id)
-  const profile = await getUserProfile(session.user.id)
+  // Fetch the bike - redirect if not found
+  const bikeOrNull = await getBike(id, session.user.id)
 
-  if (!bike) {
+  if (!bikeOrNull) {
     redirect(ROUTES.dashboard)
   }
+
+  // Type assertion after redirect check - we know redirect() never returns
+  const bike = bikeOrNull
+
+  // Fetch profile separately to avoid TS control flow confusion
+  const profile = await getUserProfile(session.user.id)
 
   // Check if profile is complete
   const hasProfile = profile && profile.height_cm && profile.inseam_cm
@@ -50,10 +55,15 @@ export default async function BikePage({ params }: { params: Promise<{ id: strin
 
   // Calculate fit recommendations if profile and geometry exist
   let fitRecommendation = null
+  let usingEstimatedProportions = false
+
   if (hasProfile && geometrySource && bike.stem_mm && bike.spacer_mm != null && bike.bar_reach_category) {
     // Estimate torso/arm if not provided (using standard proportions)
     const torso_cm = profile.torso_cm || Math.round(profile.height_cm * 0.32)
     const arm_cm = profile.arm_cm || Math.round(profile.height_cm * 0.38)
+
+    // Track if we're using estimates
+    usingEstimatedProportions = !profile.torso_cm || !profile.arm_cm
 
     // Default flexibility and riding style if not set
     const flexibility_level = (profile.flexibility_level || 2) as 1 | 2 | 3
@@ -172,6 +182,27 @@ export default async function BikePage({ params }: { params: Promise<{ id: strin
           {/* Fit Recommendations */}
           {fitRecommendation ? (
             <div className="space-y-6">
+              {/* Estimated Proportions Warning */}
+              {usingEstimatedProportions && (
+                <div className="p-4 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg">
+                  <div className="flex items-start gap-3">
+                    <span className="text-amber-600 text-xl">⚠️</span>
+                    <div className="flex-1">
+                      <div className="font-semibold text-amber-900 dark:text-amber-100 mb-1">
+                        Using Estimated Body Proportions
+                      </div>
+                      <p className="text-sm text-amber-700 dark:text-amber-200">
+                        We're estimating your torso and/or arm length based on your height. For most accurate fit recommendations,{' '}
+                        <Link href={ROUTES.profile} className="underline font-medium hover:text-amber-900">
+                          measure and update your profile
+                        </Link>
+                        . Population-average ratios can vary significantly by individual body type.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* Confidence Score & Flags */}
               <div className="rounded-2xl border bg-white dark:bg-neutral-900 shadow-sm p-6">
                 <h2 className="text-xl md:text-2xl font-semibold mb-4">Fit Analysis</h2>

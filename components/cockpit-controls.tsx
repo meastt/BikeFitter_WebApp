@@ -63,7 +63,7 @@ export function CockpitControls({
   return (
     <div className="space-y-6">
       {/* 3-column grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
         {/* Stem Length */}
         <div>
           <label className="block text-sm font-medium mb-2">
@@ -77,6 +77,10 @@ export function CockpitControls({
             onChange={(e) => handleStemSlider(Number(e.target.value))}
             className="w-full h-2 bg-neutral-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
             aria-label={`Stem length slider, current ${stem}mm, recommended ${idealStem}mm`}
+            aria-valuemin={STEM_SIZES[0]}
+            aria-valuemax={STEM_SIZES[STEM_SIZES.length - 1]}
+            aria-valuenow={stem}
+            aria-valuetext={`${stem} millimeters`}
           />
           <div className="flex justify-between items-center mt-2">
             <span className="text-xs text-muted-foreground">40mm</span>
@@ -102,6 +106,10 @@ export function CockpitControls({
             onChange={(e) => onSpacers(Number(e.target.value))}
             className="w-full h-2 bg-neutral-200 rounded-lg appearance-none cursor-pointer accent-blue-600"
             aria-label={`Spacer stack slider, current ${spacers}mm, recommended ${idealSpacers}mm`}
+            aria-valuemin={0}
+            aria-valuemax={30}
+            aria-valuenow={spacers}
+            aria-valuetext={`${spacers} millimeters`}
           />
           <div className="flex justify-between items-center mt-2">
             <span className="text-xs text-muted-foreground">0mm</span>
