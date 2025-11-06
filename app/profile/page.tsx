@@ -4,6 +4,7 @@ import { getUserProfile, upsertUserProfile } from "@/lib/db"
 import { revalidatePath } from "next/cache"
 import { Header } from "@/components/header"
 import { BackButton } from "@/components/back-button"
+import { SubmitButton } from "@/components/submit-button"
 import { ROUTES, PROFILE_DEFAULTS } from "@/lib/constants"
 
 export default async function ProfilePage() {
@@ -69,7 +70,7 @@ export default async function ProfilePage() {
 
       revalidatePath(ROUTES.profile)
       revalidatePath(ROUTES.dashboard)
-      redirect(ROUTES.dashboard)
+      redirect(`${ROUTES.dashboard}?success=profile_saved`)
     } catch (error) {
       console.error('Error updating profile:', error)
       throw error
@@ -251,12 +252,9 @@ export default async function ProfilePage() {
 
             {/* Submit */}
             <div className="flex gap-4 pt-6 border-t border-border">
-              <button
-                type="submit"
-                className="flex-1 px-6 py-3 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 active:scale-[0.98] transition-all font-medium"
-              >
+              <SubmitButton pendingText="Saving Profile..." className="flex-1">
                 Save Profile
-              </button>
+              </SubmitButton>
             </div>
           </form>
         </div>

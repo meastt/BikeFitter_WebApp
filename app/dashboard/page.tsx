@@ -4,6 +4,8 @@ import Link from "next/link"
 import { getBikes, upsertUserProfile } from "@/lib/db"
 import { signOut } from "@/auth"
 import { ROUTES, APP_NAME } from "@/lib/constants"
+import { Suspense } from "react"
+import { ToastHandler } from "./ToastHandler"
 
 export default async function Dashboard() {
   const session = await auth()
@@ -25,6 +27,11 @@ export default async function Dashboard() {
 
   return (
     <div className="min-h-screen">
+      {/* Toast handler for success messages */}
+      <Suspense fallback={null}>
+        <ToastHandler />
+      </Suspense>
+
       {/* Header */}
       <header className="border-b">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
