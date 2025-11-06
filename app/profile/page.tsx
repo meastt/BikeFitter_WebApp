@@ -53,7 +53,7 @@ export default async function ProfilePage() {
         throw new Error('Torso length must be between 40cm and 80cm')
       }
 
-      if (arm !== undefined && (isNaN(arm) || arm < 50 || arm < 90)) {
+      if (arm !== undefined && (isNaN(arm) || arm < 50 || arm > 90)) {
         throw new Error('Arm length must be between 50cm and 90cm')
       }
 
