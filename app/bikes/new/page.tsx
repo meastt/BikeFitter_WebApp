@@ -94,7 +94,7 @@ export default async function NewBikePage() {
       })
 
       revalidatePath(ROUTES.dashboard)
-      redirect(ROUTES.dashboard)
+      redirect(`${ROUTES.dashboard}?success=bike_created`)
     } catch (error) {
       console.error('Error creating bike:', error)
       throw error
