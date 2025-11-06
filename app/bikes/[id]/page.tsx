@@ -5,6 +5,8 @@ import { Header } from "@/components/header"
 import { BackButton } from "@/components/back-button"
 import { ROUTES } from "@/lib/constants"
 import { calculateFit, getBarReachValue, getConfidenceLevel, getFlagMessage, type BarCategory, type RidingStyle } from "@/lib/fit-calculator"
+import { buildVizInput } from "@/lib/cockpit-viz"
+import { CockpitDeltaCard } from "@/components/cockpit-delta-card"
 import Link from "next/link"
 
 export default async function BikePage({ params }: { params: Promise<{ id: string }> }) {
@@ -335,6 +337,35 @@ export default async function BikePage({ params }: { params: Promise<{ id: strin
                   </div>
                 </div>
               </div>
+
+              {/* Phase 5: Cockpit Delta Visualization */}
+              {geometrySource && (
+                <div className="mt-8">
+                  <CockpitDeltaCard
+                    viz={buildVizInput({
+                      frameStackMm: geometrySource.stack_mm,
+                      frameReachMm: geometrySource.reach_mm,
+                      headTubeLengthMm: geometrySource.head_tube_length_mm,
+                      currentStemMm: bike.stem_mm!,
+                      currentSpacerMm: bike.spacer_mm!,
+                      currentBarCategory: bike.bar_reach_category as BarCategory,
+                      targetReachMm: fitRecommendation.target_reach_mm,
+                      targetDropMm: fitRecommendation.target_drop_mm,
+                      idealStemMm: fitRecommendation.ideal_stem_mm,
+                      idealSpacerMm: fitRecommendation.ideal_spacer_mm,
+                      idealBarCategory: fitRecommendation.recommended_bar_reach_category,
+                      idealStemRange: fitRecommendation.ideal_stem_range_mm,
+                      idealSpacerRange: fitRecommendation.ideal_spacer_range_mm,
+                      reachDelta: fitRecommendation.reach_delta_mm,
+                      confidence: fitRecommendation.confidence,
+                      flags: fitRecommendation.flags,
+                      saddleHeightMm: bike.saddle_height_mm || undefined,
+                    })}
+                    bikeId={bike.id}
+                    currentBarCategory={bike.bar_reach_category as BarCategory}
+                  />
+                </div>
+              )}
             </div>
           ) : !hasProfile ? (
             <div className="p-8 border border-dashed border-border rounded-lg text-center">
