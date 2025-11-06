@@ -78,15 +78,15 @@ export default async function BikePage({ params }: { params: Promise<{ id: strin
       <Header />
 
       {/* Main Content */}
-      <main className="container mx-auto px-4 py-16">
-        <div className="max-w-4xl mx-auto">
+      <main className="mx-auto max-w-5xl px-4 md:px-6 py-6 md:py-10">
+        <div className="space-y-6">
           <div className="mb-8">
             <BackButton />
-            <h1 className="text-4xl font-bold mb-2">{bike.name || 'Untitled Bike'}</h1>
+            <h1 className="text-3xl md:text-4xl font-semibold mb-2">{bike.name || 'Untitled Bike'}</h1>
             {hasManualGeometry ? (
-              <p className="text-xl text-muted-foreground">Custom Geometry</p>
+              <p className="text-base md:text-lg text-muted-foreground">Custom Geometry</p>
             ) : bike.frames ? (
-              <p className="text-xl text-muted-foreground">
+              <p className="text-base md:text-lg text-muted-foreground">
                 {bike.frames.brand} {bike.frames.model} ({bike.frames.size})
               </p>
             ) : null}
@@ -94,8 +94,8 @@ export default async function BikePage({ params }: { params: Promise<{ id: strin
 
           {/* Frame Geometry Section */}
           {geometrySource && (
-            <div className="mb-8 p-6 border border-border rounded-lg">
-              <h2 className="text-2xl font-semibold mb-4">
+            <div className="rounded-2xl border bg-white dark:bg-neutral-900 shadow-sm p-6">
+              <h2 className="text-xl md:text-2xl font-semibold mb-4">
                 Frame Geometry
                 {hasManualGeometry && (
                   <span className="ml-2 text-sm font-normal text-muted-foreground">(Custom Entry)</span>
@@ -133,8 +133,8 @@ export default async function BikePage({ params }: { params: Promise<{ id: strin
           )}
 
           {/* Current Cockpit Setup Section */}
-          <div className="mb-8 p-6 border border-border rounded-lg">
-            <h2 className="text-2xl font-semibold mb-4">Current Cockpit Setup</h2>
+          <div className="rounded-2xl border bg-white dark:bg-neutral-900 shadow-sm p-6">
+            <h2 className="text-xl md:text-2xl font-semibold mb-4">Current Cockpit Setup</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
               {bike.stem_mm && (
                 <div>
@@ -173,8 +173,8 @@ export default async function BikePage({ params }: { params: Promise<{ id: strin
           {fitRecommendation ? (
             <div className="space-y-6">
               {/* Confidence Score & Flags */}
-              <div className="p-6 border border-border rounded-lg">
-                <h2 className="text-2xl font-semibold mb-4">Fit Analysis</h2>
+              <div className="rounded-2xl border bg-white dark:bg-neutral-900 shadow-sm p-6">
+                <h2 className="text-xl md:text-2xl font-semibold mb-4">Fit Analysis</h2>
                 <div className="flex items-center gap-4 mb-4">
                   <div className="flex-1">
                     <div className="text-sm text-muted-foreground mb-1">Recommendation Confidence</div>
@@ -237,8 +237,8 @@ export default async function BikePage({ params }: { params: Promise<{ id: strin
               </div>
 
               {/* Recommendations */}
-              <div className="p-6 border border-border rounded-lg">
-                <h2 className="text-2xl font-semibold mb-4">Recommended Cockpit Setup</h2>
+              <div className="rounded-2xl border bg-white dark:bg-neutral-900 shadow-sm p-6">
+                <h2 className="text-xl md:text-2xl font-semibold mb-4">Recommended Cockpit Setup</h2>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   {/* Stem Length */}
                   <div>

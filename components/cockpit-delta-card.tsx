@@ -5,7 +5,6 @@ import { VizInput, projectToSvgModel } from '@/lib/cockpit-viz'
 import { CockpitSvg } from './cockpit-svg'
 import { CockpitControls } from './cockpit-controls'
 import { CockpitHeader } from './cockpit-header'
-import { CockpitLegend } from './cockpit-legend'
 import { getBarReachValue, type BarCategory } from '@/lib/fit-calculator'
 import { updateBikeCockpit } from '@/app/bikes/[id]/actions'
 import { useRouter } from 'next/navigation'
@@ -112,16 +111,29 @@ export function CockpitDeltaCard({ viz, bikeId, currentBarCategory }: CockpitDel
 
   // Check if we're at perfect match
   const isPerfectMatch =
-    Math.abs(model.deltas.reach) <= 3 && Math.abs(model.deltas.drop) <= 3
+    Math.abs(model.deltas.reach.value) <= 3 &&
+    Math.abs(model.deltas.drop.value) <= 3
 
   return (
-    <div className="rounded-2xl border border-border p-6 space-y-6 bg-white dark:bg-neutral-900">
-      {/* Header */}
-      <CockpitHeader confidence={viz.target.confidence} flags={viz.target.flags} />
+    <div className="rounded-2xl border bg-white dark:bg-neutral-900 shadow-sm">
+      {/* Card Header */}
+      <div className="p-4 md:p-6 border-b border-border">
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <div>
+            <h2 className="text-xl font-semibold">Cockpit Delta</h2>
+            <p className="text-sm text-muted-foreground mt-1">
+              Interactive visualization and live tinkering
+            </p>
+          </div>
+        </div>
+
+        {/* Confidence + Flags Pills */}
+        <CockpitHeader confidence={viz.target.confidence} flags={viz.target.flags} />
+      </div>
 
       {/* Perfect Match Banner */}
       {isPerfectMatch && (
-        <div className="p-4 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg text-center">
+        <div className="mx-4 md:mx-6 mt-4 p-4 bg-green-50 dark:bg-green-950 border border-green-200 dark:border-green-800 rounded-lg text-center">
           <div className="text-2xl mb-1">✅</div>
           <div className="font-semibold text-green-900 dark:text-green-100">
             You're dialed! Save this setup.
@@ -132,19 +144,19 @@ export function CockpitDeltaCard({ viz, bikeId, currentBarCategory }: CockpitDel
         </div>
       )}
 
-      {/* Visualization */}
-      <div
-        ref={svgRef}
-        className="p-4 border border-border rounded-lg bg-neutral-50 dark:bg-neutral-800"
-      >
-        <CockpitSvg model={model} />
+      {/* SVG Visualization with 16:9 aspect ratio */}
+      <div className="px-2 md:px-6 py-6">
+        <div
+          ref={svgRef}
+          className="relative w-full bg-neutral-50 dark:bg-neutral-800 rounded-lg overflow-hidden"
+          style={{ aspectRatio: '16/9' }}
+        >
+          <CockpitSvg model={model} />
+        </div>
       </div>
 
-      {/* Legend */}
-      <CockpitLegend deltas={model.deltas} />
-
       {/* Controls */}
-      <div className="pt-6 border-t border-border">
+      <div className="px-4 md:px-6 pb-6 border-t border-border pt-6">
         <h3 className="text-lg font-semibold mb-4">Adjust Cockpit</h3>
         <CockpitControls
           stem={stem}
@@ -160,6 +172,8 @@ export function CockpitDeltaCard({ viz, bikeId, currentBarCategory }: CockpitDel
               ([_, val]) => val === viz.target.ideal_bar_reach_mm
             )?.[0] || 'med') as BarCategory
           }
+          reachDelta={model.deltas.reach.value}
+          dropDelta={model.deltas.drop.value}
           onReset={handleReset}
           onApply={handleApply}
           isApplying={isApplying}
@@ -167,11 +181,11 @@ export function CockpitDeltaCard({ viz, bikeId, currentBarCategory }: CockpitDel
       </div>
 
       {/* Export Button */}
-      <div className="pt-4 border-t border-border">
+      <div className="px-4 md:px-6 pb-6 border-t border-border pt-4">
         <button
           onClick={handleExport}
           disabled={isExporting}
-          className="w-full px-4 py-2 border border-neutral-300 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+          className="w-full px-4 py-2 border border-neutral-300 rounded-lg hover:bg-neutral-50 dark:hover:bg-neutral-800 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:-translate-y-[1px]"
           aria-label="Export visualization as PNG image"
         >
           {isExporting ? 'Exporting...' : '📸 Export as PNG'}
