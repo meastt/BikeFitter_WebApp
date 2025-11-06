@@ -28,9 +28,27 @@ export default async function BikePage({ params }: { params: Promise<{ id: strin
   // Check if profile is complete
   const hasProfile = profile && profile.height_cm && profile.inseam_cm
 
-  // Calculate fit recommendations if profile and frame exist
+  // Determine geometry source (manual overrides frame)
+  const hasManualGeometry = bike.manual_stack_mm && bike.manual_reach_mm
+  const hasGeometry = hasManualGeometry || bike.frames
+
+  const geometrySource = hasManualGeometry ? {
+    stack_mm: bike.manual_stack_mm!,
+    reach_mm: bike.manual_reach_mm!,
+    seat_tube_angle_deg: bike.manual_seat_tube_angle_deg,
+    head_tube_length_mm: bike.manual_head_tube_length_mm,
+    wheelbase_mm: bike.manual_wheelbase_mm,
+  } : bike.frames ? {
+    stack_mm: bike.frames.stack_mm,
+    reach_mm: bike.frames.reach_mm,
+    seat_tube_angle_deg: bike.frames.seat_tube_angle_deg,
+    head_tube_length_mm: bike.frames.head_tube_length_mm,
+    wheelbase_mm: bike.frames.wheelbase_mm,
+  } : null
+
+  // Calculate fit recommendations if profile and geometry exist
   let fitRecommendation = null
-  if (hasProfile && bike.frames) {
+  if (hasProfile && geometrySource) {
     fitRecommendation = calculateFit(
       {
         height_cm: profile.height_cm,
@@ -42,8 +60,8 @@ export default async function BikePage({ params }: { params: Promise<{ id: strin
         pain_points: profile.pain_points || undefined,
       },
       {
-        stack_mm: bike.frames.stack_mm,
-        reach_mm: bike.frames.reach_mm,
+        stack_mm: geometrySource.stack_mm,
+        reach_mm: geometrySource.reach_mm,
       },
       {
         stem_mm: bike.stem_mm || undefined,
@@ -63,42 +81,49 @@ export default async function BikePage({ params }: { params: Promise<{ id: strin
           <div className="mb-8">
             <BackButton />
             <h1 className="text-4xl font-bold mb-2">{bike.name || 'Untitled Bike'}</h1>
-            {bike.frames && (
+            {hasManualGeometry ? (
+              <p className="text-xl text-muted-foreground">Custom Geometry</p>
+            ) : bike.frames ? (
               <p className="text-xl text-muted-foreground">
                 {bike.frames.brand} {bike.frames.model} ({bike.frames.size})
               </p>
-            )}
+            ) : null}
           </div>
 
           {/* Frame Geometry Section */}
-          {bike.frames && (
+          {geometrySource && (
             <div className="mb-8 p-6 border border-border rounded-lg">
-              <h2 className="text-2xl font-semibold mb-4">Frame Geometry</h2>
+              <h2 className="text-2xl font-semibold mb-4">
+                Frame Geometry
+                {hasManualGeometry && (
+                  <span className="ml-2 text-sm font-normal text-muted-foreground">(Custom Entry)</span>
+                )}
+              </h2>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div>
                   <div className="text-sm text-muted-foreground">Stack</div>
-                  <div className="text-2xl font-bold">{bike.frames.stack_mm}mm</div>
+                  <div className="text-2xl font-bold">{geometrySource.stack_mm}mm</div>
                 </div>
                 <div>
                   <div className="text-sm text-muted-foreground">Reach</div>
-                  <div className="text-2xl font-bold">{bike.frames.reach_mm}mm</div>
+                  <div className="text-2xl font-bold">{geometrySource.reach_mm}mm</div>
                 </div>
-                {bike.frames.seat_tube_angle_deg && (
+                {geometrySource.seat_tube_angle_deg && (
                   <div>
                     <div className="text-sm text-muted-foreground">Seat Tube Angle</div>
-                    <div className="text-2xl font-bold">{bike.frames.seat_tube_angle_deg}°</div>
+                    <div className="text-2xl font-bold">{geometrySource.seat_tube_angle_deg}°</div>
                   </div>
                 )}
-                {bike.frames.head_tube_length_mm && (
+                {geometrySource.head_tube_length_mm && (
                   <div>
                     <div className="text-sm text-muted-foreground">Head Tube Length</div>
-                    <div className="text-2xl font-bold">{bike.frames.head_tube_length_mm}mm</div>
+                    <div className="text-2xl font-bold">{geometrySource.head_tube_length_mm}mm</div>
                   </div>
                 )}
-                {bike.frames.wheelbase_mm && (
+                {geometrySource.wheelbase_mm && (
                   <div>
                     <div className="text-sm text-muted-foreground">Wheelbase</div>
-                    <div className="text-2xl font-bold">{bike.frames.wheelbase_mm}mm</div>
+                    <div className="text-2xl font-bold">{geometrySource.wheelbase_mm}mm</div>
                   </div>
                 )}
               </div>

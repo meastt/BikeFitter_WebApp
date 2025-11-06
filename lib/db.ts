@@ -151,6 +151,11 @@ export async function createBike(
     bar_reach_category?: 'short' | 'med' | 'long'
     saddle_height_mm?: number
     saddle_setback_mm?: number
+    manual_stack_mm?: number
+    manual_reach_mm?: number
+    manual_seat_tube_angle_deg?: number
+    manual_head_tube_length_mm?: number
+    manual_wheelbase_mm?: number
   }
 ) {
   const supabase = await createClient()
