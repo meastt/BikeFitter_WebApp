@@ -35,9 +35,11 @@ export default function Home() {
               Get Fit Recommendations
             </Link>
             <button
-              className="px-8 py-3 border border-border rounded-md hover:bg-accent active:scale-[0.98] transition-all text-lg font-semibold"
+              disabled
+              className="px-8 py-3 border border-border rounded-md bg-muted text-muted-foreground cursor-not-allowed text-lg font-semibold"
+              title="Coming soon"
             >
-              Compare Bikes
+              Compare Bikes (Coming Soon)
             </button>
           </div>
 
@@ -51,13 +53,6 @@ export default function Home() {
               <p className="text-lg mb-2">"Finally picked the right stem length."</p>
               <p className="text-sm text-muted-foreground">— Alana G.</p>
             </div>
-          </div>
-
-          {/* How it works link */}
-          <div className="mt-12">
-            <button className="text-muted-foreground hover:text-foreground active:scale-[0.98] transition-all underline">
-              How does this work?
-            </button>
           </div>
         </div>
       </main>
