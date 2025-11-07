@@ -8,7 +8,9 @@
     "start": "next start",
     "lint": "eslint",
     "migrate": "supabase db push",
-    "seed": "ts-node scripts/seed_frames.ts"
+    "seed": "ts-node scripts/seed_frames.ts",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@supabase/ssr": "^0.7.0",
@@ -33,6 +35,7 @@
     "eslint-config-next": "16.0.1",
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.0.7"
   }
 }

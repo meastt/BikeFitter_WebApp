@@ -4,7 +4,8 @@ import { getBike, getUserProfile } from "@/lib/db"
 import { Header } from "@/components/header"
 import { BackButton } from "@/components/back-button"
 import { ROUTES } from "@/lib/constants"
-import { calculateFit, getBarReachValue, getConfidenceLevel, getFlagMessage, type BarCategory, type RidingStyle } from "@/lib/fit-calculator"
+import { calculateFitV1 } from "@/lib/fit-adapter"
+import { getBarReachValue, getConfidenceLevel, getFlagMessage, type BarCategory, type RidingStyle } from "@/lib/fit-calculator"
 import { buildVizInput } from "@/lib/cockpit-viz"
 import { CockpitDeltaCard } from "@/components/cockpit-delta-card"
 import Link from "next/link"
@@ -70,7 +71,7 @@ export default async function BikePage({ params }: { params: Promise<{ id: strin
     const riding_style = (profile.riding_style || 'endurance') as RidingStyle
     const pain_points = profile.pain_points || []
 
-    fitRecommendation = calculateFit({
+    fitRecommendation = calculateFitV1({
       torso_cm,
       arm_cm,
       flexibility_level,
